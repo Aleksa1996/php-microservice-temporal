@@ -1,0 +1,7 @@
+FROM aleksajo/php-cli-grpc:latest as shop
+
+COPY composer.json composer.lock /var/www/html/
+
+WORKDIR /var/www/html
+
+CMD bash -c "/var/www/html/bin/rr serve -c .rr.temporal.yaml --debug"

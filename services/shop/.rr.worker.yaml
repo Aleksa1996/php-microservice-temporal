@@ -1,0 +1,36 @@
+version: "2.7"
+
+rpc:
+    listen: tcp://127.0.0.1:6001
+
+service:
+    identity_access:
+        command: "php /var/www/html/bin/console messenger:consume identity_access --limit=50 --time-limit=3000 --no-debug"
+        process_num: 1
+        exec_timeout: 0s
+        remain_after_exit: true
+        restart_sec: 1
+        env:
+            - APP_ENV: local
+
+status:
+    address: localhost:2114
+
+logs:
+    mode: development
+    level: debug
+    channels:
+        server:
+            mode: raw
+            level: info
+
+reload:
+    enabled: true
+    interval: 1s
+    patterns: [".php", ".yaml"]
+    services:
+        cms:
+            recursive: true
+            ignore: [ "/var/www/html/vendor", "/var/www/html/var"]
+            dirs: ["."]
+      

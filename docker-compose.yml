@@ -1,0 +1,212 @@
+version: "3.8"
+
+services:
+
+# ---------------------------------------------------------------------------- #
+#                                 Proxy                                        #
+# ---------------------------------------------------------------------------- #
+    proxy:
+        container_name: proxy
+        image: local-docker-images/traefik:latest
+        volumes:
+            - ./.docker/config/proxy/traefik.yml:/etc/traefik/traefik.yml
+            - ./.docker/config/proxy/config.yml:/etc/traefik/config.yml
+            - /var/run/docker.sock:/var/run/docker.sock
+        ports:
+            - "80:80"
+            - "8080:8080"
+        restart: unless-stopped
+        networks:
+            main_net:
+                ipv4_address: 172.16.240.100
+# ---------------------------------------------------------------------------- #
+#                                 MySQL server                                 #
+# ---------------------------------------------------------------------------- #
+    db:
+        container_name: db
+        image: local-docker-images/mariadb:latest
+        command: --transaction-isolation=READ-COMMITTED
+        volumes:
+            - ./.docker/config/db/data:/var/lib/mysql
+            - ./.docker/config/db/share:/var/www/html
+            - ./.docker/config/db/my.cnf:/etc/mysql/my.cnf
+            - ./.docker/config/db/mariadb.cnf:/etc/mysql/mariadb.cnf
+            - ./.docker/config/db/mariadb.conf.d:/etc/mysql/mariadb.conf.d
+        ports:
+            - "3306:3306"
+        restart: unless-stopped
+        environment:
+            - MARIADB_MYSQL_LOCALHOST_USER=true
+            - MYSQL_ROOT_HOST=%
+            - MYSQL_ROOT_PASSWORD=root
+            - MYSQL_DATABASE=tst
+        networks:
+            - main_net
+# ---------------------------------------------------------------------------- #
+#                                 Adminer                                      #
+# ---------------------------------------------------------------------------- #
+    adminer:
+        container_name: adminer
+        image: adminer:latest
+        volumes:
+            - ./.docker/config/adminer/adminer.css:/var/www/html/adminer.css
+        restart: unless-stopped
+        networks:
+            - main_net
+        labels:
+            - "traefik.enable=true"
+
+            - "traefik.http.routers.adminer.entrypoints=web"
+            - "traefik.http.routers.adminer.rule=Host(`adminer.local`)"
+            - "traefik.http.routers.adminer.service=adminer"
+            - "traefik.http.services.adminer.loadbalancer.server.port=8080"
+# ---------------------------------------------------------------------------- #
+#                                 Mailcatcher                                  #
+# ---------------------------------------------------------------------------- #
+    mailcatcher:
+        container_name: mailcatcher
+        image: local-docker-images/mailcatcher:latest
+        restart: unless-stopped
+        networks:
+            - main_net
+        labels:
+            - "traefik.enable=true"
+
+            - "traefik.http.routers.mailcatcher.entrypoints=web"
+            - "traefik.http.routers.mailcatcher.rule=Host(`mailcatcher.local`)"
+            - "traefik.http.routers.mailcatcher.service=mailcatcher"
+            - "traefik.http.services.mailcatcher.loadbalancer.server.port=1080"
+# ---------------------------------------------------------------------------- #
+#                            Message broker                                    #
+# ---------------------------------------------------------------------------- #
+    message-broker:
+        container_name: message-broker
+        image: local-docker-images/rabbitmq:latest
+        restart: unless-stopped
+        volumes:
+            - ./.docker/config/message-broker/rabbitmq-env.conf:/etc/rabbitmq/rabbitmq-env.conf
+        networks:
+            - main_net
+        labels:
+            - "traefik.enable=true"
+
+            - "traefik.http.routers.message-broker.entrypoints=web"
+            - "traefik.http.routers.message-broker.rule=Host(`message-broker.local`)"
+            - "traefik.http.routers.message-broker.service=message-broker"
+            - "traefik.http.services.message-broker.loadbalancer.server.port=15672"
+# ---------------------------------------------------------------------------- #
+#                            Temporal                                          #
+# ---------------------------------------------------------------------------- #
+    temporal:
+        container_name: temporal
+        image: temporalio/auto-setup:1.16.2
+        volumes:
+            - ./.docker/config/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
+        restart: unless-stopped
+        environment:
+            - DB=mysql
+            - DB_PORT=3306
+            - MYSQL_USER=root
+            - MYSQL_PWD=root
+            - MYSQL_SEEDS=temporal-db
+            - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+        networks:
+            - main_net
+# ---------------------------------------------------------------------------- #
+#                                 Temporal DB                                  #
+# ---------------------------------------------------------------------------- #
+    temporal-db:
+        container_name: temporal-db
+        image: mysql:8
+        volumes:
+            - ./.docker/config/temporal/persistence/data:/var/lib/mysql
+        restart: unless-stopped
+        environment:
+            - MYSQL_ROOT_HOST=%
+            - MYSQL_ROOT_PASSWORD=root
+            - MYSQL_DATABASE=temporal
+        networks:
+            - main_net
+# ---------------------------------------------------------------------------- #
+#                            Temporal admin tools                              #
+# ---------------------------------------------------------------------------- #
+    temporal-admin-tools:
+        container_name: temporal-admin-tools
+        image: temporalio/admin-tools:1.16.2
+        restart: unless-stopped
+        environment:
+            - TEMPORAL_CLI_ADDRESS=temporal:7233
+        stdin_open: true
+        tty: true
+        networks:
+            - main_net
+        depends_on:
+            - temporal
+# ---------------------------------------------------------------------------- #
+#                            Temporal web                                      #
+# ---------------------------------------------------------------------------- #
+    temporal-web:
+        container_name: temporal-web
+        image: temporalio/web:1.13.0
+        environment:
+            - TEMPORAL_GRPC_ENDPOINT=temporal:7233
+            - TEMPORAL_PERMIT_WRITE_API=true
+        restart: unless-stopped
+        networks:
+            - main_net
+        depends_on:
+            - temporal
+        labels:
+            - "traefik.enable=true"
+
+            - "traefik.http.routers.temporal.entrypoints=web"
+            - "traefik.http.routers.temporal.rule=Host(`temporal.local`)"
+            - "traefik.http.routers.temporal.service=temporal"
+            - "traefik.http.services.temporal.loadbalancer.server.port=8088"
+# ---------------------------------------------------------------------------- #
+#                                 Shop                                         #
+# ---------------------------------------------------------------------------- #
+    shop-service:
+        container_name: shop-service
+        image: local-build/shop-service
+        build:
+            context: ./services/shop
+            dockerfile: Dockerfile
+            target: shop
+        volumes:
+            - ./.docker/config/backend/php.ini:/usr/etc/php/php.ini
+            - ./services/shop:/var/www/html
+        restart: unless-stopped
+        networks:
+            - main_net
+        depends_on:
+            message-broker:
+                condition: service_healthy
+# ---------------------------------------------------------------------------- #
+#                                 Shop Temporal worker                         #
+# ---------------------------------------------------------------------------- #
+    shop-service-temporal:
+        container_name: shop-service-temporal
+        image: local-build/shop-service-temporal
+        build:
+            context: ./services/shop
+            dockerfile: Dockerfile.temporal
+            target: shop
+        volumes:
+            - ./.docker/config/backend/php.ini:/usr/etc/php/php.ini
+            - ./services/shop:/var/www/html
+        restart: unless-stopped
+        networks:
+            - main_net
+        depends_on:
+            message-broker:
+                condition: service_healthy
+# ---------------------------------------------------------------------------- #
+#                                 Network                                      #
+# ---------------------------------------------------------------------------- #
+networks:
+    main_net:
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.16.240.0/24
