@@ -1,6 +1,8 @@
 <?php
 
-$finder = PhpCsFixer\Finder::create()->in('/var/www/html/src');
+$finder = PhpCsFixer\Finder::create()
+    ->in('/var/www/html/src')
+    ->exclude('Grpc/Proto');
 
 $config = new PhpCsFixer\Config();
 

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "beb3c4f9da1b964e7d0394473934c086",
+    "content-hash": "5aa95198109dcdd6eeced385cb1988d2",
     "packages": [
         {
             "name": "baldinof/roadrunner-bundle",
@@ -2604,6 +2604,67 @@
                 "source": "https://github.com/spiral/roadrunner-cli/tree/v2.4.0"
             },
             "time": "2022-12-16T07:35:51+00:00"
+        },
+        {
+            "name": "spiral/roadrunner-grpc",
+            "version": "v2.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/spiral/roadrunner-grpc.git",
+                "reference": "41ddf6f9747c990609830c61723da9f9cccb9ded"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/spiral/roadrunner-grpc/zipball/41ddf6f9747c990609830c61723da9f9cccb9ded",
+                "reference": "41ddf6f9747c990609830c61723da9f9cccb9ded",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "google/common-protos": "^3.1",
+                "google/protobuf": "^3.7",
+                "php": ">=7.4",
+                "spiral/roadrunner": "^2.0",
+                "symfony/polyfill-php80": "^1.22"
+            },
+            "require-dev": {
+                "jetbrains/phpstorm-attributes": "^1.0",
+                "mockery/mockery": "^1.4",
+                "phpunit/phpunit": "^9.5",
+                "spiral/code-style": "^1.0",
+                "symfony/var-dumper": ">=4.4",
+                "vimeo/psalm": "^4.6"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.0.x-dev"
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/polyfill.php"
+                ],
+                "psr-4": {
+                    "Spiral\\RoadRunner\\GRPC\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Anton Titov / Wolfy-J",
+                    "email": "wolfy.jd@gmail.com"
+                }
+            ],
+            "description": "High-Performance GRPC server for PHP applications",
+            "support": {
+                "issues": "https://github.com/spiral/roadrunner-grpc/issues",
+                "source": "https://github.com/spiral/roadrunner-grpc/tree/v2.0.1"
+            },
+            "time": "2022-11-10T10:11:03+00:00"
         },
         {
             "name": "spiral/roadrunner-http",

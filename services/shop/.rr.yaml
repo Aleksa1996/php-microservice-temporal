@@ -9,6 +9,11 @@ server:
 rpc:
     listen: tcp://127.0.0.1:6001
 
+grpc:
+    listen: "tcp://127.0.0.1:9001"
+    proto:
+        - "src/Grpc/Proto/Order/order.proto"
+
 http:
     address: 0.0.0.0:80
     middleware: [ "static", "gzip" ]
