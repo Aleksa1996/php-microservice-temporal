@@ -6,6 +6,9 @@ WORKDIR /var/www/html
 
 CMD bash -c "composer install --no-interaction && /var/www/html/bin/rr serve -c .rr.yaml --debug"
 
+EXPOSE 80
+EXPOSE 9001
+
 HEALTHCHECK --interval=30s --timeout=30s \
   CMD curl http://localhost:2114/health?plugin=http -s -f -m 3 -o /dev/null || exit 1
 

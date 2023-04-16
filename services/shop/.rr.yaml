@@ -10,7 +10,7 @@ rpc:
     listen: tcp://127.0.0.1:6001
 
 grpc:
-    listen: "tcp://127.0.0.1:9001"
+    listen: tcp://:9001
     proto:
         - "src/Grpc/Proto/Order/order.proto"
 
